@@ -110,6 +110,7 @@ func (tb *TB) Run(ctx context.Context, passphrase []byte) error {
 			tbLimitLock.Lock()
 			rand.Seed(time.Now().UnixNano())
 			tb.cfg.Limit = rand.Intn(int(configTicketBuyerLimit)) + 1
+			log.Infof("random ticketBuyer.limit %d", tb.cfg.Limit)
 			tbLimitLock.Unlock()
 			tip := n.AttachedBlocks[len(n.AttachedBlocks)-1]
 			w := tb.wallet
