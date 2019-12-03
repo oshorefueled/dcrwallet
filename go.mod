@@ -50,7 +50,7 @@ replace (
 	github.com/decred/dcrwallet/lru => ./lru
 	github.com/decred/dcrwallet/p2p/v2 => ./p2p
 	github.com/decred/dcrwallet/pgpwordlist => ./pgpwordlist
-	github.com/decred/dcrwallet/rpc/jsonrpc/types => ./rpc/jsonrpc/types
+	github.com/decred/dcrwallet/rpc/jsonrpc/types => github.com/jrick/btcwallet/rpc/jsonrpc/types v0.0.0-20191120163008-8ae1d5875aa7
 	github.com/decred/dcrwallet/rpc/walletrpc => ./rpc/walletrpc
 	github.com/decred/dcrwallet/validate => ./validate
 	github.com/decred/dcrwallet/version => ./version

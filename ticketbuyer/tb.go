@@ -6,9 +6,11 @@ package ticketbuyer
 
 import (
 	"context"
+	"math/rand"
 	"net"
 	"runtime/trace"
 	"sync"
+	"time"
 
 	"github.com/decred/dcrd/dcrutil/v2"
 	"github.com/decred/dcrd/wire"
@@ -63,6 +65,9 @@ type TB struct {
 	mu  sync.Mutex
 }
 
+// lock for modifying the ticket buyer limit from different go routines.
+var tbLimitLock sync.Mutex
+
 // New returns a new TB to buy tickets from a wallet using the default config.
 func New(w *wallet.Wallet) *TB {
 	return &TB{wallet: w}
@@ -100,7 +105,12 @@ func (tb *TB) Run(ctx context.Context, passphrase []byte) error {
 			if len(n.AttachedBlocks) == 0 {
 				continue
 			}
-
+			// ticket buyer limit is randomly selected between and set value
+			configTicketBuyerLimit := tb.cfg.Limit
+			tbLimitLock.Lock()
+			rand.Seed(time.Now().UnixNano())
+			tb.cfg.Limit = rand.Intn(int(configTicketBuyerLimit)) + 1
+			tbLimitLock.Unlock()
 			tip := n.AttachedBlocks[len(n.AttachedBlocks)-1]
 			w := tb.wallet
 			tipHeader, err := w.BlockHeader(ctx, tip)
@@ -163,6 +173,9 @@ func (tb *TB) Run(ctx context.Context, passphrase []byte) error {
 						outerCancel()
 					}
 				}
+				tbLimitLock.Lock()
+				tb.cfg.Limit = configTicketBuyerLimit
+				tbLimitLock.Unlock()
 			}()
 			go func() {
 				err := tb.mixChange(ctx)
