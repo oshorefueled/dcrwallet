@@ -303,6 +303,7 @@ func run(ctx context.Context) error {
 				c.VotingAddr = votingAddr
 				c.PoolFeeAddr = poolFeeAddr
 				c.Limit = int(cfg.TBOpts.Limit)
+				c.ProcessLimit = int(cfg.TBOpts.ProcessLimit)
 				c.VotingAccount = votingAccount
 				c.CSPPServer = cfg.CSPPServer
 				c.DialCSPPServer = cfg.dialCSPPServer
