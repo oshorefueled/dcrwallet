@@ -22,13 +22,13 @@ import (
 	ldr "decred.org/dcrwallet/internal/loader"
 	"decred.org/dcrwallet/internal/prompt"
 	"decred.org/dcrwallet/internal/rpc/rpcserver"
+	"decred.org/dcrwallet/ticketbuyer"
 	"github.com/decred/dcrd/addrmgr"
 	"github.com/decred/dcrd/wire"
 	"github.com/decred/dcrwallet/chain/v3"
 	"github.com/decred/dcrwallet/errors/v2"
 	"github.com/decred/dcrwallet/p2p/v2"
 	"github.com/decred/dcrwallet/spv/v3"
-	"github.com/decred/dcrwallet/ticketbuyer/v4"
 	"github.com/decred/dcrwallet/version"
 	"github.com/decred/dcrwallet/wallet/v3"
 )
@@ -303,6 +303,7 @@ func run(ctx context.Context) error {
 				c.VotingAddr = votingAddr
 				c.PoolFeeAddr = poolFeeAddr
 				c.Limit = int(cfg.TBOpts.Limit)
+				c.ProcessLimit = int(cfg.TBOpts.ProcessLimit)
 				c.VotingAccount = votingAccount
 				c.CSPPServer = cfg.CSPPServer
 				c.DialCSPPServer = cfg.dialCSPPServer

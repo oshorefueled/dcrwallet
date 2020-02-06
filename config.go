@@ -167,6 +167,7 @@ type ticketBuyerOptions struct {
 	VotingAddress             *cfgutil.AddressFlag `long:"votingaddress" description:"Purchase tickets with voting rights assigned to this address"`
 	votingAddress             dcrutil.Address
 	Limit                     uint   `long:"limit" description:"Buy no more than specified number of tickets per block (0 disables limit)"`
+	ProcessLimit              uint   `long:"processlimit" description:"Run specified number of async ticket purchase processes (0 disables process limit"`
 	VotingAccount             string `long:"votingaccount" description:"Account used to derive addresses specifying voting rights"`
 }
 

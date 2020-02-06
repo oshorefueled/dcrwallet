@@ -43,6 +43,9 @@ type Config struct {
 	// Limit maximum number of purchased tickets per block
 	Limit int
 
+	// Maximum number of synchronous purchases to be executed.
+	ProcessLimit int
+
 	// CSPP-related options
 	CSPPServer         string
 	DialCSPPServer     func(ctx context.Context, network, addr string) (net.Conn, error)
@@ -145,25 +148,30 @@ func (tb *TB) Run(ctx context.Context, passphrase []byte) error {
 
 			cancelCtx, cancel := context.WithCancel(ctx)
 			cancels = append(cancels, cancel)
-			go func() {
-				err := tb.buy(cancelCtx, passphrase, tipHeader, expiry)
-				if err != nil {
-					switch {
-					// silence these errors
-					case errors.Is(err, errors.InsufficientBalance):
-					case errors.Is(err, context.Canceled):
-					case errors.Is(err, context.DeadlineExceeded):
-					default:
-						log.Errorf("Ticket purchasing failed: %v", err)
+
+			syncTicketProcesses := tb.cfg.ProcessLimit + 1
+			for i := 0; i < syncTicketProcesses; i++ {
+				go func() {
+					err := tb.buy(cancelCtx, passphrase, tipHeader, expiry)
+					if err != nil {
+						switch {
+						// silence these errors
+						case errors.Is(err, errors.InsufficientBalance):
+						case errors.Is(err, context.Canceled):
+						case errors.Is(err, context.DeadlineExceeded):
+						default:
+							log.Errorf("Ticket purchasing failed: %v", err)
+						}
+						if errors.Is(err, errors.Passphrase) {
+							fatalMu.Lock()
+							fatal = err
+							fatalMu.Unlock()
+							outerCancel()
+						}
 					}
-					if errors.Is(err, errors.Passphrase) {
-						fatalMu.Lock()
-						fatal = err
-						fatalMu.Unlock()
-						outerCancel()
-					}
-				}
-			}()
+				}()
+			}
+
 			go func() {
 				err := tb.mixChange(ctx)
 				if err != nil {
