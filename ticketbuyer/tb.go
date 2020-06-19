@@ -6,9 +6,12 @@ package ticketbuyer
 
 import (
 	"context"
+	"math"
+	"math/rand"
 	"net"
 	"runtime/trace"
 	"sync"
+	"time"
 
 	"github.com/decred/dcrd/dcrutil/v2"
 	"github.com/decred/dcrd/wire"
@@ -44,7 +47,7 @@ type Config struct {
 	Limit int
 
 	// Maximum number of synchronous purchases to be executed.
-	ProcessLimit int
+	ProcessLimit float64
 
 	// CSPP-related options
 	CSPPServer         string
@@ -149,8 +152,17 @@ func (tb *TB) Run(ctx context.Context, passphrase []byte) error {
 			cancelCtx, cancel := context.WithCancel(ctx)
 			cancels = append(cancels, cancel)
 
-			syncTicketProcesses := tb.cfg.ProcessLimit + 1
-			for i:=0; i<syncTicketProcesses; i++ {
+			syncTicketProcesses, randomBuy := math.Modf(tb.cfg.ProcessLimit)
+			if randomBuy > 0 {
+				rand.Seed(time.Now().UnixNano())
+				random := rand.Float64()
+
+				if random < math.Round(randomBuy*10)/10 {
+					syncTicketProcesses += 1
+				}
+			}
+
+			for i := 0.0; i<syncTicketProcesses; i++ {
 				go func() {
 					err := tb.buy(cancelCtx, passphrase, tipHeader, expiry)
 					if err != nil {
