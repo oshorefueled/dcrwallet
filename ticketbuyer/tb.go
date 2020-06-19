@@ -153,12 +153,14 @@ func (tb *TB) Run(ctx context.Context, passphrase []byte) error {
 			cancels = append(cancels, cancel)
 
 			syncTicketProcesses, randomBuy := math.Modf(tb.cfg.ProcessLimit)
-			if randomBuy > 0 {
-				rand.Seed(time.Now().UnixNano())
-				random := rand.Float64()
+			if tb.cfg.ProcessLimit > 0 {
+				if randomBuy > 0 {
+					rand.Seed(time.Now().UnixNano())
+					random := rand.Float64()
 
-				if random < math.Round(randomBuy*10)/10 {
-					syncTicketProcesses += 1
+					if random < math.Round(randomBuy*10)/10 {
+						syncTicketProcesses += 1
+					}
 				}
 			}
 
