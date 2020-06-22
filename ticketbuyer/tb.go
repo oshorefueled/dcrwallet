@@ -152,19 +152,22 @@ func (tb *TB) Run(ctx context.Context, passphrase []byte) error {
 			cancelCtx, cancel := context.WithCancel(ctx)
 			cancels = append(cancels, cancel)
 
+			// split the processLimit into a whole and decimal number. The whole number determines the definite number
+			// of tickets that would be purchased while the decimal determines the probability of purchasing an extra
+			// ticket.
 			syncTicketProcesses, randomBuy := math.Modf(tb.cfg.ProcessLimit)
 			if tb.cfg.ProcessLimit > 0 {
 				if randomBuy > 0 {
 					rand.Seed(time.Now().UnixNano())
 					random := rand.Float64()
-
-					if random < math.Round(randomBuy*10)/10 {
+					// add an extra ticket to purchase when the random float is lesser than the decimal
+					if random < randomBuy {
 						syncTicketProcesses += 1
 					}
 				}
 			}
 
-			for i := 0.0; i<syncTicketProcesses; i++ {
+			for i := 0.0; i < syncTicketProcesses; i++ {
 				go func() {
 					err := tb.buy(cancelCtx, passphrase, tipHeader, expiry)
 					if err != nil {
