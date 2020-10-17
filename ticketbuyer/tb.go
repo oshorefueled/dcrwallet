@@ -6,9 +6,12 @@ package ticketbuyer
 
 import (
 	"context"
+	"math"
+	"math/rand"
 	"net"
 	"runtime/trace"
 	"sync"
+	"time"
 
 	"github.com/decred/dcrd/dcrutil/v2"
 	"github.com/decred/dcrd/wire"
@@ -42,6 +45,9 @@ type Config struct {
 
 	// Limit maximum number of purchased tickets per block
 	Limit int
+
+	// Maximum number of synchronous purchases to be executed.
+	ProcessLimit float64
 
 	// CSPP-related options
 	CSPPServer         string
@@ -145,25 +151,42 @@ func (tb *TB) Run(ctx context.Context, passphrase []byte) error {
 
 			cancelCtx, cancel := context.WithCancel(ctx)
 			cancels = append(cancels, cancel)
-			go func() {
-				err := tb.buy(cancelCtx, passphrase, tipHeader, expiry)
-				if err != nil {
-					switch {
-					// silence these errors
-					case errors.Is(err, errors.InsufficientBalance):
-					case errors.Is(err, context.Canceled):
-					case errors.Is(err, context.DeadlineExceeded):
-					default:
-						log.Errorf("Ticket purchasing failed: %v", err)
-					}
-					if errors.Is(err, errors.Passphrase) {
-						fatalMu.Lock()
-						fatal = err
-						fatalMu.Unlock()
-						outerCancel()
-					}
+
+			buy := int(math.Floor(tb.cfg.ProcessLimit))
+			extraTicketChance := math.Mod(tb.cfg.ProcessLimit, 1)
+			if extraTicketChance > 0 {
+				r := rand.New(rand.NewSource(time.Now().UnixNano()))
+				randomNumber := r.Float64()
+				if extraTicketChance >= randomNumber {
+					buy++
+					log.Infof("%.4f >= %.4f(random), will buy %d", extraTicketChance, randomNumber, buy)
+				} else {
+					log.Infof("%.4f < %.4f(random), will buy %d", extraTicketChance, randomNumber, buy)
 				}
-			}()
+			}
+
+			for i := 0; i < buy; i++ {
+				go func() {
+					err := tb.buy(cancelCtx, passphrase, tipHeader, expiry)
+					if err != nil {
+						switch {
+						// silence these errors
+						case errors.Is(err, errors.InsufficientBalance):
+						case errors.Is(err, context.Canceled):
+						case errors.Is(err, context.DeadlineExceeded):
+						default:
+							log.Errorf("Ticket purchasing failed: %v", err)
+						}
+						if errors.Is(err, errors.Passphrase) {
+							fatalMu.Lock()
+							fatal = err
+							fatalMu.Unlock()
+							outerCancel()
+						}
+					}
+				}()
+			}
+
 			go func() {
 				err := tb.mixChange(ctx)
 				if err != nil {

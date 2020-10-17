@@ -44,3 +44,5 @@ require (
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	google.golang.org/grpc v1.22.0
 )
+
+replace github.com/decred/dcrwallet/ticketbuyer/v4 => ./ticketbuyer
